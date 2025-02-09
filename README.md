@@ -23,6 +23,16 @@ pip install python-can cantools pandas asammdf
 
 ---
 
+
+## **🚀 実行方法**
+GUIツールをコンソール上で実行ください。もしくは`CANFormatConverter`をAPIのように利用いただくことも可能です。
+```bash
+python ./src/ConverterGUI.py
+```
+
+---
+
+
 ## **🚀 使い方**
 ### **1️⃣ DBC ファイルを読み込む**
 DBCファイルをドラッグアンドドロップ or `select DBC`からファイルを読み込む
@@ -32,3 +42,8 @@ CANログファイルをドラッグアンドドロップ or `select Files`か�
 CANログファイルをドラッグアンドドロップ or `select Files`からファイルを読み込む
 ### **4⃣ フォーマット変換**
 `Convert`をボタンを押して変換を実行
+
+---
+
+## **📩 お問い合わせ**
+バグ報告や機能追加のリクエストは、GitHub の Issues に投稿してください！
