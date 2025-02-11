@@ -18,7 +18,7 @@
 本アプリを使用するには、以下の Python ライブラリが必要です。  
 
 ```bash
-pip install python-can cantools pandas asammdf
+pip install python-can cantools pandas asammdf tkinterdnd2
 ```
 
 ---
@@ -44,6 +44,7 @@ CANログファイルをドラッグアンドドロップ or `select Files`か�
 `Convert`をボタンを押して変換を実行
 
 <img src="icon/screen1.png" alt="画像の説明" width="400">
+
 
 ---
 
