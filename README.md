@@ -36,7 +36,7 @@ python ./src/ConverterGUI.py
 ## **🚀 使い方**
 ### **1️⃣ DBC ファイルを読み込む**
 DBCファイルをドラッグアンドドロップ or `select DBC`からファイルを読み込む
-### **2️⃣ BLF 形式の CANログを 選択**
+### **2️⃣ BLF/ASC/MF4 形式の CANログを 選択**
 CANログファイルをドラッグアンドドロップ or `select Files`からファイルを読み込む
 ### **3️⃣ 変換フォーマットを選択**
 CANログファイルをドラッグアンドドロップ or `select Files`からファイルを読み込む
