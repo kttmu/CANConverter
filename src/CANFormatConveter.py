@@ -290,7 +290,7 @@ class CANFormatConverter:
 
 if __name__ == "__main__":
     
-    dbc_pth = glob(fr"/home/kengo/research/20250115/dbc-69/*.dbc")
+    dbc_pth = glob(fr"/path/to/dbc")
     input_pth = "./output_sample.blf"
 
     can_converter = CANFormatConverter()
