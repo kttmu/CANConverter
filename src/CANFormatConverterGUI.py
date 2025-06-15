@@ -9,7 +9,6 @@ import pandas as pd
 from CANFormatConveter import CANFormatConverter
 import threading
 
-converter = CANFormatConverter()
 
 def on_drop_db(event):
     files = root.tk.splitlist(event.data)
@@ -24,6 +23,14 @@ def on_drop_input(event):
     for file in files:
         if file.lower().endswith(('.asc', '.blf', '.BLF', '.mf4', '.mat')):
             input_listbox.insert(tk.END, file)
+        else:
+            messagebox.showwarning("Warning", f"'{os.path.basename(file)}' is not a supported input file.")
+
+def on_drop_target_id(event):
+    files = root.tk.splitlist(event.data)
+    for file in files:
+        if file.lower().endswith(('.xlsx')):
+            target_id_listbox.insert(tk.END, file)
         else:
             messagebox.showwarning("Warning", f"'{os.path.basename(file)}' is not a supported input file.")
 
@@ -55,6 +62,7 @@ def convert_to_other_format():
     # リストボックス内の情報を取得
     dbc_files = list(dbc_listbox.get(0, tk.END))
     input_files = list(input_listbox.get(0, tk.END))
+    target_id_files = list(target_id_listbox.get(0, tk.END))
     save_dir = filedialog.askdirectory(title="Select Output Directory")
 
     # 入力データがない、もしくは入力データがCANでDBCが含まれない場合はメッセージを表示して初期状態に戻す
@@ -64,8 +72,7 @@ def convert_to_other_format():
             messagebox.showwarning("Warning", "Please select DBC and input files before converting.")
             return
         else: 
-            # DBCファイルを読み込む
-            converter.load_and_merge_dbc(dbc_files)
+            pass
 
     # 何らかのトラブルで保存先フォルダが取得できていない場合は強制終了
     if not save_dir:
@@ -90,9 +97,16 @@ def convert_to_other_format():
         processed_files = 0
         selected_format = output_format_combobox.get().lower()
 
-
         # 入力ファイルを取得順に変換していく
         for file in input_files:
+            if len(target_id_files)>0:
+                converter = CANFormatConverter(excel_path=target_id_files[0])
+            else:
+                converter = CANFormatConverter()
+            
+            # DBCファイルを読み込む
+            converter.load_and_merge_dbc(dbc_files)
+
             output_file = os.path.join(save_dir, os.path.basename(file) + f".{selected_format}")
             converter.convert(file, output_file)
             
@@ -120,7 +134,7 @@ frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 # Database Listbox
 db_frame = tk.LabelFrame(frame, text="DBC Files", padx=5, pady=5)
 db_frame.pack(fill=tk.BOTH, expand=True)
-dbc_listbox = tk.Listbox(db_frame, selectmode=tk.MULTIPLE)
+dbc_listbox = tk.Listbox(db_frame, selectmode=tk.MULTIPLE, height=4)
 dbc_listbox.pack(fill=tk.BOTH, expand=True)
 dbc_listbox.drop_target_register(DND_FILES)
 dbc_listbox.dnd_bind("<<Drop>>", on_drop_db)
@@ -128,10 +142,18 @@ dbc_listbox.dnd_bind("<<Drop>>", on_drop_db)
 # Input File Listbox
 input_frame = tk.LabelFrame(frame, text="Input Files", padx=5, pady=5)
 input_frame.pack(fill=tk.BOTH, expand=True)
-input_listbox = tk.Listbox(input_frame, selectmode=tk.MULTIPLE)
+input_listbox = tk.Listbox(input_frame, selectmode=tk.MULTIPLE, height=4)
 input_listbox.pack(fill=tk.BOTH, expand=True)
 input_listbox.drop_target_register(DND_FILES)
 input_listbox.dnd_bind("<<Drop>>", on_drop_input)
+
+# Input convertion target id list
+target_id_frame = tk.LabelFrame(frame, text="Convertion target", padx=1, pady=1)
+target_id_frame.pack(fill=tk.BOTH, expand=True)
+target_id_listbox = tk.Listbox(target_id_frame, selectmode=tk.MULTIPLE, height=2)
+target_id_listbox.pack(fill=tk.BOTH, expand=True)
+target_id_listbox.drop_target_register(DND_FILES)
+target_id_listbox.dnd_bind("<<Drop>>", on_drop_target_id)
 
 # Output Format Selection
 format_frame = tk.LabelFrame(frame, text="Output Format", padx=5, pady=5)
@@ -161,5 +183,10 @@ clear_input_button.pack(side=tk.LEFT, padx=5, pady=5)
 
 quit_button = tk.Button(button_frame, text="Quit", command=root.quit)
 quit_button.pack(side=tk.RIGHT, padx=5, pady=5)
+
+# GUI内に追加
+crop_mode_var = tk.BooleanVar()
+crop_check = tk.Checkbutton(root, text="クロップモード（指定IDのみ）", variable=crop_mode_var)
+#crop_check.grid(row=5, column=0, sticky="w")
 
 root.mainloop()

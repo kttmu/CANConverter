@@ -1,17 +1,21 @@
 import can
 import pandas as pd
+import numpy as np
 import cantools
 from glob import glob
 import os
 import scipy
 from asammdf import MDF
+from tqdm import tqdm
 
 class CANFormatConverter:
-    def __init__(self):
+    def __init__(self, crop_mode=False, excel_path=None):
         self.database = None
         self.temp_data_set = {}
         self.update_counter = 0
-        pass
+        self.crop_mode = crop_mode
+        self.crop_target_excel_path = excel_path
+        self.crop_ids = []
     
     def load_and_merge_dbc(self, dbc_files):
         try:
@@ -20,10 +24,35 @@ class CANFormatConverter:
             for dbc_file in dbc_files:
                 database.add_dbc_file(dbc_file)
             self.database = database
-            return database
         except Exception as e:
             print(f"Error loading DBC files: {e}")
-            return None
+    
+    def load_crop_id_list(self):
+        #try:
+        if 1:
+            df = pd.read_excel(self.crop_target_excel_path)
+            for val in df['ID']:
+                if isinstance(val, str) and val.startswith("0x"):
+                    self.crop_ids.append(int(val, 16))
+                elif isinstance(val, int):
+                    self.crop_ids.append(val)
+            self.crop_mode = True
+            return
+        #except Exception as e:
+        else:
+            print(f"IDリストの読み込みに失敗しました: {e}")
+            self.crop_mode = False
+            return
+    
+    def is_target_id(self, msg):
+        """
+        メッセージのIDがクロップ対象のIDリストに含まれているかを確認
+        """
+        if self.crop_mode:
+            return msg.arbitration_id in self.crop_ids
+        else:
+            return True
+
 
     # blf -> csv    
     def convert_blf_to_csv(self, input_pth, output_pth):
@@ -39,26 +68,29 @@ class CANFormatConverter:
             return
         # blfファイルの読み込み()
         blfdata=can.io.blf.BLFReader(input_pth)
+
+        # Crop IDリストを読み込む
+        self.load_crop_id_list()
         
         # 保存用のデータベースの初期化
         self.initialize_decoded_signal_list()
 
-        for msg in blfdata:
+        for msg in tqdm(blfdata):
             try:
-                # decode
-                decoded_signals = self.database.get_message_by_frame_id(msg.arbitration_id).decode(msg.data, decode_choices=False)
-                timestamp = msg.timestamp
-                print(fr"Succeed Converting can_id={msg.arbitration_id}")
+                # クロップ対象のIDかどうかを確認
+                if self.is_target_id(msg):
+                    # decode
+                    decoded_signals = self.database.get_message_by_frame_id(msg.arbitration_id).decode(msg.data, decode_choices=False)
+                    timestamp = msg.timestamp
 
-                # update database
-                self.update_decoded_signal_list(timestamp, decoded_signals)
+                    # update database
+                    self.update_decoded_signal_list(timestamp, decoded_signals)
 
             except Exception as e:
                 print(fr"Cannot find id :{e}")
         
         #　デコード結果をcsvとして出力
         self.save_decoded_signal_list(output_pth)
-
 
     
     def initialize_decoded_signal_list(self):
@@ -96,7 +128,7 @@ class CANFormatConverter:
                 self.temp_data_set[sig][-1] = dec_sigs[sig]
 
 
-    def save_decoded_signal_list(self, output_pth, chunk_size=1000, down_sampling_rate=200):
+    def save_decoded_signal_list(self, output_pth, chunk_size=100000, sampling_rate=10):
         """
         デコードした CAN データを CSV に保存（大容量データの場合は分割）
         
@@ -117,7 +149,11 @@ class CANFormatConverter:
         df = df[["time"] + sorted(self.temp_data_set.keys())]  # カラム順を統一
 
         # DataFrameをダウンサンプリング
-        df = df[::down_sampling_rate]
+        time_length = float(np.max(df.time) - np.min(df.time))
+        after_data_length = int(time_length * sampling_rate)
+        down_sampling_rate = int(len(df) // after_data_length)
+        if down_sampling_rate > 0:
+            df = df[::down_sampling_rate]
     
         # データを `chunk_size` ごとに分割して保存
         total_rows = len(df)
